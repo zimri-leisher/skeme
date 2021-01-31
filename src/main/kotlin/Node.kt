@@ -6,7 +6,6 @@ sealed class Node {
 
 class Cell(val left: Node, val right: Node) : Node() {
     override fun evaluate(closure: Closure, cdr: Node): Node {
-        println("evaluating $left with $right")
         val function = if(left !is ProcedureNode) left.evaluate(closure, Nil) else left
         if(function !is ProcedureNode) {
             throw Exception("$function is not a procedure")
@@ -101,13 +100,11 @@ open class LambdaObjectNode(val arguments: Node, val function: Node, val capture
             innerClosure[(arguments as TextNode).text] = cdr
             return function.evaluate(innerClosure, Nil)
         } else {
-            println("args of function $function:")
             val innerClosure = Closure(parent = capturedClosure.copy())
             val argumentNames = Data.delink(arguments).map { (it as TextNode).text }
             val arguments = Data.delink(cdr)
             for(i in argumentNames.indices) {
                 val evaluatedArgument = arguments[i].evaluate(closure, Nil)
-                println("   setting ${argumentNames[i]}=$evaluatedArgument")
                 innerClosure[argumentNames[i]] = evaluatedArgument
             }
             return function.evaluate(innerClosure, Nil)

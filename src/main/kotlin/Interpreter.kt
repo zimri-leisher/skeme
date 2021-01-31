@@ -1,12 +1,25 @@
-class Interpreter() {
+/**
+ * A class which allows parsing and running of Scheme code. To use, instantiate and then call [run]
+ */
+class Interpreter {
 
+    /**
+     * The tokens of the current parse
+     */
     lateinit var tokens: Array<Token>
 
+    /**
+     * The current token the interpreter is parsing
+     */
     var currentParseIndex = 0
 
+    /**
+     * The cumulative closure of all code that has been ran in this [Interpreter] instance
+     */
     val closure = Closure()
 
     init {
+        // initialize all native language features that can't be written with other scheme code
         closure["define"] = DefineFunction
         closure["if"] = IfFunction
         closure["lambda"] = LambdaFunction
@@ -84,6 +97,10 @@ class Interpreter() {
         closure["null"] = Nil
     }
 
+    /**
+     * Parses and then evaluates the inputted text, returning the result. Side effects made by this code on the global
+     * [Closure] will remain for later code ran.
+     */
     fun run(text: String): Node {
         tokenize(text)
         var lastResult: Node? = null
@@ -94,7 +111,7 @@ class Interpreter() {
         return lastResult ?: Nil
     }
 
-    fun tokenize(text: String) {
+    private fun tokenize(text: String) {
         val tokens = mutableListOf<Token>()
         for (line in text.lines()) {
             val betterText = line.replace("(", " ( ").replace(")", " ) ")
@@ -113,7 +130,7 @@ class Interpreter() {
         currentParseIndex = 0
     }
 
-    fun eat(): Token {
+    private fun eat(): Token {
         while (currentParseIndex < tokens.lastIndex - 1 && peek().type == TokenType.NEW_LINE) {
             currentParseIndex++
         }
@@ -122,7 +139,7 @@ class Interpreter() {
         return token
     }
 
-    fun eat(tokenType: TokenType): Token {
+    private fun eat(tokenType: TokenType): Token {
         if (currentParseIndex > tokens.lastIndex) {
             throw Exception("End of file, expecting $tokenType")
         }
@@ -137,9 +154,9 @@ class Interpreter() {
         return token
     }
 
-    fun peek() = tokens[currentParseIndex]
+    private fun peek() = tokens[currentParseIndex]
 
-    fun expression(): Node {
+    private fun expression(): Node {
         val next = eat()
         when (next.type) {
             TokenType.NEW_LINE -> {

@@ -1,3 +1,6 @@
+/**
+ * Just a temporary helper class for linking and delinking groups of [Cell]s
+ */
 object Data {
     fun link(list: List<Node>): Node {
         if (list.isEmpty()) {

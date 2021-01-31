@@ -1,4 +1,4 @@
-class Interpreter(val text: String) {
+class Interpreter() {
 
     lateinit var tokens: Array<Token>
 
@@ -84,18 +84,17 @@ class Interpreter(val text: String) {
         closure["null"] = Nil
     }
 
-    fun run(): Node {
-        tokenize()
+    fun run(text: String): Node {
+        tokenize(text)
         var lastResult: Node? = null
         while (currentParseIndex < tokens.lastIndex) {
             val expr = expression()
-            println(expr)
             lastResult = expr.evaluate(closure, Nil)
         }
         return lastResult ?: Nil
     }
 
-    fun tokenize() {
+    fun tokenize(text: String) {
         val tokens = mutableListOf<Token>()
         for (line in text.lines()) {
             val betterText = line.replace("(", " ( ").replace(")", " ) ")
@@ -111,6 +110,7 @@ class Interpreter(val text: String) {
             tokens.add(Token(TokenType.NEW_LINE, "\n"))
         }
         this.tokens = tokens.toTypedArray()
+        currentParseIndex = 0
     }
 
     fun eat(): Token {

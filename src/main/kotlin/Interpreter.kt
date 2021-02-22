@@ -91,6 +91,7 @@ class Interpreter {
         closure["length"] = NativeFunction { closure, args ->
             IntLiteral(Data.delink(args[0]).size)
         }
+        closure["set!"] = SetBangFunction
         closure["let"] = LetFunction
         closure["and"] = AndFunction
         closure["or"] = OrFunction
@@ -180,7 +181,7 @@ class Interpreter {
                 return IntLiteral(next.text.toInt())
             }
             TokenType.SYMBOL -> {
-                return TextNode(next.text)
+                return SymbolNode(next.text)
             }
             TokenType.LITERAL_STRING -> {
                 return StringLiteral(next.text.substring(1, next.text.length - 1))

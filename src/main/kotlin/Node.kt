@@ -33,6 +33,15 @@ class Cell(val left: Node, val right: Node) : Node() {
 
 abstract class ProcedureNode : Node()
 
+object SetBangFunction : ProcedureNode() {
+    override fun evaluate(closure: Closure, cdr: Node): Node {
+        val (name, value) = Data.delink(cdr)
+        val evaluatedValue = value.evaluate(closure, Nil)
+        closure[(name as SymbolNode).text] = evaluatedValue
+        return evaluatedValue
+    }
+}
+
 object CondFunction : ProcedureNode() {
     override fun evaluate(closure: Closure, cdr: Node): Node {
         val conditions = Data.delink(cdr)
@@ -49,15 +58,22 @@ object CondFunction : ProcedureNode() {
 
 object LetFunction : ProcedureNode() {
     override fun evaluate(closure: Closure, cdr: Node): Node {
-        val (variableList, function) = Data.delink(cdr)
+        val args = Data.delink(cdr)
+        val variableList = args[0]
         val innerClosure = Closure(parent = closure)
         variableList as Cell
         val variables = Data.delink(variableList)
         for(variable in variables) {
             val (name, value) = Data.delink(variable)
-            innerClosure[(name as TextNode).text] = value.evaluate(closure, Nil)
+            innerClosure[(name as SymbolNode).text] = value.evaluate(closure, Nil)
         }
-        return function.evaluate(innerClosure, Nil)
+        for(code in args.subList(1, args.size)) {
+            if(code == args.last()) {
+                return code.evaluate(innerClosure, Nil)
+            }
+            code.evaluate(innerClosure, Nil)
+        }
+        return Nil
     }
 }
 
@@ -75,7 +91,7 @@ class QuoteFunction(val expression: Node) : ProcedureNode() {
 object DefineFunction : ProcedureNode() {
     override fun evaluate(closure: Closure, cdr: Node): Node {
         cdr as Cell
-        val name = (cdr.left as TextNode).text
+        val name = (cdr.left as SymbolNode).text
         val value = (cdr.right as Cell).left
         closure.setGlobal(name, value.evaluate(closure, Nil))
         return value
@@ -96,18 +112,16 @@ open class LambdaObjectNode(val arguments: Node, val function: Node, val capture
             if(arguments is Nil) {
                 return function.evaluate(Closure(parent = capturedClosure.copy()), Nil)
             }
-            val innerClosure = Closure(parent = capturedClosure.copy())
-            innerClosure[(arguments as TextNode).text] = cdr
-            return function.evaluate(innerClosure, Nil)
+            capturedClosure[(arguments as SymbolNode).text] = cdr
+            return function.evaluate(capturedClosure, Nil)
         } else {
-            val innerClosure = Closure(parent = capturedClosure.copy())
-            val argumentNames = Data.delink(arguments).map { (it as TextNode).text }
+            val argumentNames = Data.delink(arguments).map { (it as SymbolNode).text }
             val arguments = Data.delink(cdr)
             for(i in argumentNames.indices) {
                 val evaluatedArgument = arguments[i].evaluate(closure, Nil)
-                innerClosure[argumentNames[i]] = evaluatedArgument
+                capturedClosure[argumentNames[i]] = evaluatedArgument
             }
-            return function.evaluate(innerClosure, Nil)
+            return function.evaluate(capturedClosure, Nil)
         }
     }
 }
@@ -148,7 +162,7 @@ object AndFunction : ProcedureNode() {
     }
 }
 
-class TextNode(val text: String) : Node() {
+class SymbolNode(val text: String) : Node() {
 
     override fun evaluate(closure: Closure, cdr: Node): Node {
         return closure[text] ?: throw Exception("Unable to resolve variable $text")
